@@ -1,0 +1,77 @@
+/* Fade-in effect for the whole form */
+form {
+  animation: fadeIn 0.8s ease-out forwards;
+}
+
+/* Smooth input focus effect */
+input,
+textarea,
+button {
+  transition: all 0.3s ease;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  outline: none;
+}
+
+input:focus,
+textarea:focus {
+  border-color: #4caf50;
+  box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+  transform: scale(1.02);
+}
+
+/* Button hover effect */
+button {
+  background-color: #4caf50;
+  color: white;
+  cursor: pointer;
+  border: none;
+}
+
+button:hover {
+  background-color: #45a049;
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Captured image animation */
+img {
+  opacity: 0;
+  animation: slideFadeIn 0.5s forwards;
+  border-radius: 6px;
+}
+
+/* Pending form list animation */
+ul li {
+  opacity: 0;
+  transform: translateX(-20px);
+  animation: listFadeIn 0.5s forwards;
+}
+
+ul li:nth-child(1) {
+  animation-delay: 0.1s;
+}
+ul li:nth-child(2) {
+  animation-delay: 0.2s;
+}
+ul li:nth-child(3) {
+  animation-delay: 0.3s;
+}
+/* Add more if needed */
+
+/* Keyframes */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideFadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes listFadeIn {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
