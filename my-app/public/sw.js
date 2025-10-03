@@ -1,51 +1,50 @@
- const CACHE_NAME = "pwa-cache-v1";
+
+// sw.js - Robust Vite + PWA Service Worker
+const CACHE_NAME = "pwa-cache-v2";
 const OFFLINE_URL = "/index.html";
 
+// Assets to cache
 const urlsToCache = [
-  "/",
-  "/index.html",
-  "/manifest.json",
-  "/icon-192x192.png",
-  "/vite.svg"
+  "/",                     // root page
+  "/index.html",           // offline fallback
+  "/manifest.json",        // manifest
+  "/icons/icon-192x192.png",
+  "/icons/icon-512x512.png",
+  "/app.js",
 ];
 
-// 1️⃣ Install event: cache offline resources
+// 1️⃣ Install: cache essential assets
 self.addEventListener("install", (event) => {
   console.log("Service Worker installing...");
   event.waitUntil(
-    (async () => {
-      const cache = await caches.open(CACHE_NAME);
-      for (const url of urlsToCache) {
-        try {
-          await cache.add(url);
-        } catch (err) {
-          console.warn("Failed to cache:", url, err);
-        }
-      }
-    })()
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache))
   );
   self.skipWaiting();
 });
 
-// 2️⃣ Activate event: clean up old caches
+// 2️⃣ Activate: remove old caches
 self.addEventListener("activate", (event) => {
   console.log("Service Worker activating...");
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
-        keys.filter((key) => key !== CACHE_NAME)
-            .map((key) => caches.delete(key))
+        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
       )
     )
   );
   self.clients.claim();
 });
 
-// 3️⃣ Fetch event: offline fallback
+// 3️⃣ Fetch: safe cache-first + network with offline fallback
 self.addEventListener("fetch", (event) => {
-  const request = event.request;
+  const { request } = event;
 
-  // SPA / navigation fallback
+  // Ignore dev-only Vite URLs
+  if (request.url.includes("/@vite/") || request.url.endsWith(".jsx")) {
+    return; // skip caching
+  }
+
+  // Handle navigation requests (SPA)
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request).catch(() => caches.match(OFFLINE_URL))
@@ -53,25 +52,43 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Static assets cache first
+  // Other requests: cache first, then network, then fallback
   event.respondWith(
-    caches.match(request).then((cached) => cached || fetch(request))
+    caches.match(request).then((cached) => {
+      if (cached) return cached;
+
+      return fetch(request)
+        .then((response) => {
+          // Optionally cache dynamically fetched files
+          if (response && response.status === 200 && response.type === "basic") {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
+          }
+          return response;
+        })
+        .catch((err) => {
+          console.warn("Fetch failed, returning fallback:", request.url, err);
+          // Fallback for HTML pages
+          if (request.headers.get("accept")?.includes("text/html")) {
+            return caches.match(OFFLINE_URL);
+          }
+          // For other assets, return a 503 Response
+          return new Response("Resource unavailable", { status: 503, statusText: "Service Unavailable" });
+        });
+    })
   );
 });
 
 // 4️⃣ Push notifications
 self.addEventListener("push", (event) => {
-  let data = {};
-  if (event.data) data = event.data.json();
-
+  let data = event.data ? event.data.json() : {};
   const title = data.title || "New Notification";
   const options = {
     body: data.body || "You have a new message",
-    icon: data.icon || "/logo192.png",
-    badge: data.badge || "/logo192.png",
+    icon: data.icon || "/icons/icon-192x192.png",
+    badge: data.badge || "/icons/icon-192x192.png",
     data: { url: data.url || "/" },
   };
-
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
@@ -79,8 +96,8 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   event.waitUntil(
-    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientsList) => {
+      for (const client of clientsList) {
         if ("focus" in client) {
           client.navigate(event.notification.data.url);
           return client.focus();
@@ -90,3 +107,23 @@ self.addEventListener("notificationclick", (event) => {
     })
   );
 });
+// service-worker.js
+
+ 
+// Install event: caching app shell
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
+  );
+});
+
+// Fetch event: serve cached content when offline
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request).then(response => {
+      return response || fetch(event.request);
+    })
+  );
+});
+
+

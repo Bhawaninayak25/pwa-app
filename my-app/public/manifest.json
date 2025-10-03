@@ -1,9 +1,11 @@
 {
-  "name": "pwa school",
+  "name": "PWA School",
   "short_name": "PWA",
-  "start_url": "/",
+  "start_url": "./index.html",
   "scope": "/",
-  "display": "standalone",
+  "id": "/",
+  "display": "fullscreen",
+  "orientation": "portrait",
   "background_color": "#ffffff",
   "theme_color": "#008bff",
   "description": "Sample PWA with install support",
@@ -14,7 +16,7 @@
       "type": "image/png"
     },
     {
-      "src": "/icons/vite.svg",
+      "src": "/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
